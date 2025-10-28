@@ -1,101 +1,140 @@
 /*
- * BL0940 Energy Meter - Teste Final
- * Baseado na implementação de Breno Diniz Trevisan
+ * BL0940 Usage Example - Best Practices
+ * 
+ * Demonstra:
+ * 1. Calibração ajustável
+ * 2. Filtro de média móvel na APLICAÇÃO (não na biblioteca)
+ * 3. Código limpo e organizado
  */
 
-#include <Arduino.h>
 #include "MCM_BL0940.h"
 
-// Definir pinos
-#define SEL_PIN  5
-#define SCK_PIN  18
-#define MISO_PIN 19
-#define MOSI_PIN 23
+// Pinos SPI
+#define SEL_PIN   5
+#define SCK_PIN   18
+#define MISO_PIN  19
+#define MOSI_PIN  23
 
-// Criar objeto
+// Instância do BL0940
 BL0940 meter(SEL_PIN, SCK_PIN, MISO_PIN, MOSI_PIN);
 
-void setup() {
-  Serial.begin(115200);
-  delay(3000);
+// ========== FILTRO DE MÉDIA MÓVEL (aplicação do usuário) ==========
+
+class MovingAverage {
+private:
+  float *buffer;
+  uint8_t size;
+  uint8_t index;
+  bool filled;
   
-  Serial.println("\n╔════════════════════════════════════╗");
-  Serial.println("║   BL0940 SPI - TESTE FINAL        ║");
-  Serial.println("╚════════════════════════════════════╝\n");
-  
-  // Inicializar
-  if(!meter.begin(400000)) {
-    Serial.println("✗ Falha na inicialização!");
-    while(1) delay(1000);
+public:
+  MovingAverage(uint8_t bufferSize) {
+    size = bufferSize;
+    buffer = new float[size];
+    index = 0;
+    filled = false;
+    for(uint8_t i = 0; i < size; i++) buffer[i] = 0;
   }
   
-  // Configurar
-  meter.setFrequency(60);
-  delay(50);
-  meter.setUpdateRate(400);
+  ~MovingAverage() {
+    delete[] buffer;
+  }
   
-  Serial.println("\n→ Aguardando 3s...\n");
-  delay(3000);
+  float add(float value) {
+    buffer[index] = value;
+    index = (index + 1) % size;
+    if (index == 0) filled = true;
+    
+    float sum = 0;
+    uint8_t count = filled ? size : index;
+    for (uint8_t i = 0; i < count; i++) {
+      sum += buffer[i];
+    }
+    return sum / count;
+  }
+};
+
+// Filtros (5 leituras = suave, 3 leituras = responsivo)
+MovingAverage voltageFilter(5);
+MovingAverage currentFilter(5);
+MovingAverage powerFilter(5);
+
+// ========== SETUP ==========
+
+void setup()
+{
+  Serial.begin(115200);
+  Serial.println("\n=== BL0940 Example ===\n");
+  
+  if (!meter.begin()) {
+    Serial.println("Falha ao inicializar BL0940!");
+    while(1);
+  }
+  
+  Serial.println("BL0940 inicializado!");
+  
+  // Configurações básicas
+  meter.setFrequency(60);      // 50Hz ou 60Hz
+  meter.setUpdateRate(500);    // 400ms ou 800ms (800 = mais estável)
+  
+  // ========== CALIBRAÇÃO ==========
+  // Ajustar baseado em medições reais:
+  
+  // Para cargas BAIXAS (< 1A):
+  // meter.setCurrentCalibration(1.05);  // +5%
+  // meter.setPowerCalibration(1.05);
+  
+  // Para cargas MÉDIAS (1-5A):
+  meter.setCurrentCalibration(1.00);  // sem correção
+  meter.setPowerCalibration(1.00);
+  
+  // Para cargas ALTAS (> 5A):
+  // meter.setCurrentCalibration(0.97);  // -3%
+  // meter.setPowerCalibration(0.97);
+  
+  Serial.println("→ Calibração configurada");
+  Serial.println("→ Aguardando estabilização...\n");
+  delay(2000);
 }
 
-void loop() {
-  unsigned long loopStart = micros();
+// ========== LOOP ==========
+
+void loop()
+{
+  float voltage, current, power, pf, temp, energy;
   
-  float voltage = 0;
-  float current = 0;
-  float power = 0;
-  float pf = 0;
-  
-  Serial.println("════════════════════════════════════");
-  Serial.printf("⏱ Tempo: %lu s\n", millis() / 1000);
-  Serial.println("────────────────────────────────────");
-  
-  unsigned long t1 = micros();
-  if(meter.getVoltage(&voltage)) {
-    unsigned long dt = micros() - t1;
-    Serial.printf("⚡ Tensão:      %7.2f V ", voltage);
-    if(voltage > 200 && voltage < 240) {
-      Serial.printf("✓ (%lu µs)\n", dt);
-    } else {
-      Serial.printf("⚠ (%lu µs)\n", dt);
-    }
-  } else {
-    Serial.println("⚡ Tensão:      ✗ ERRO");
+  // Ler valores RAW (sem filtro)
+  if (meter.getVoltage(&voltage)) {
+    voltage = voltageFilter.add(voltage);  // Aplicar filtro
+    Serial.printf("⚡ Tensão:  %6.2f V\n", voltage);
   }
   
-  t1 = micros();
-  if(meter.getCurrent(&current)) {
-    unsigned long dt = micros() - t1;
-    Serial.printf("🔌 Corrente:    %7.3f A ✓ (%lu µs)\n", current, dt);
-  } else {
-    Serial.println("🔌 Corrente:    ✗ ERRO");
+  if (meter.getCurrent(&current)) {
+    current = currentFilter.add(current);
+    Serial.printf("🔌 Corrente: %6.3f A\n", current);
   }
   
-  t1 = micros();
-  if(meter.getActivePower(&power)) {
-    unsigned long dt = micros() - t1;
-    Serial.printf("💡 Potência:    %7.2f W ✓ (%lu µs)\n", power, dt);
-  } else {
-    Serial.println("💡 Potência:    ✗ ERRO");
+  if (meter.getActivePower(&power)) {
+    power = powerFilter.add(power);
+    Serial.printf("💡 Potência: %6.2f W\n", power);
   }
   
-  t1 = micros();
-  if(meter.getPowerFactor(&pf)) {
-    unsigned long dt = micros() - t1;
-    Serial.printf("📊 FP:          %7.2f %% ", pf);
-    if(pf > 0 && pf <= 100) {
-      Serial.printf("✓ (%lu µs)\n", dt);
-    } else {
-      Serial.printf("⚠ FORA DO RANGE (%lu µs)\n", dt);
-    }
-  } else {
-    Serial.println("📊 FP:          ✗ ERRO");
+  if (meter.getPowerFactor(&pf)) {
+    Serial.printf("📊 FP:       %6.2f %%\n", pf);
   }
   
-  unsigned long loopTotal = micros() - loopStart;
-  Serial.println("────────────────────────────────────");
-  Serial.printf("⏲  TOTAL: %lu µs (%.2f ms)\n", loopTotal, loopTotal / 1000.0);
-  Serial.println("════════════════════════════════════\n");
+  if (meter.getTemperature(&temp)) {
+    Serial.printf("🌡️  Temp:     %6.1f °C\n", temp);
+  }
+  
+  if (meter.getActiveEnergy(&energy)) {
+    Serial.printf("⚡ Energia:  %6.3f kWh\n", energy);
+  }
+  
+  // Cálculo manual de verificação
+  float calculated_power = voltage * current;
+  Serial.printf("\n✓ V×I = %.2f W (calculado)\n", calculated_power);
+  Serial.println("───────────────────────────\n");
   
   delay(2000);
 }
