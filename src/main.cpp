@@ -55,9 +55,9 @@ public:
 };
 
 // Filtros (5 leituras = suave, 3 leituras = responsivo)
-MovingAverage voltageFilter(5);
-MovingAverage currentFilter(5);
-MovingAverage powerFilter(5);
+MovingAverage voltageFilter(3);
+MovingAverage currentFilter(3);
+MovingAverage powerFilter(3);
 
 // ========== SETUP ==========
 
@@ -75,7 +75,7 @@ void setup()
   
   // Configurações básicas
   meter.setFrequency(60);      // 50Hz ou 60Hz
-  meter.setUpdateRate(500);    // 400ms ou 800ms (800 = mais estável)
+  meter.setUpdateRate(400);    // 400ms ou 800ms
   
   // ========== CALIBRAÇÃO ==========
   // Ajustar baseado em medições reais:

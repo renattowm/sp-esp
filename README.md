@@ -51,10 +51,10 @@ ESP32                BL0940
 GPIO 5  ──────────── SEL (keep HIGH)
 GPIO 18 ──────────── SCK
 GPIO 19 ──────┬───── MISO
-             │
+              │
             10kΩ
-             │
-            VCC
+              │
+             VCC
 
 GPIO 23 ──────────── MOSI
 GND     ──────────── GND
