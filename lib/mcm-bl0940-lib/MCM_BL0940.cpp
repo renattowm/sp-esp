@@ -140,7 +140,8 @@ bool BL0940::getVoltage(float *voltage)
     return false;
   }
   
-  double R_total = (double)(R2 + R9 + R10 + R19 + R20);
+  // R_total em ohms (convertido de kΩ), então dividimos por 1000
+  double R_total = (double)(R2 + R9 + R10 + R19 + R20) / 1000.0;
   *voltage = (float)((double)data * Vref * R_total / (79931.0 * R30));
   
   return true;
@@ -173,7 +174,8 @@ bool BL0940::getActivePower(float *activePower)
   int32_t rawPower = (int32_t)(data << 8) >> 8;
   if (rawPower < 0) rawPower = -rawPower;
   
-  double R_total = (double)(R2 + R9 + R10 + R19 + R20);
+  // R_total em ohms (convertido de kΩ), então dividimos por 1000
+  double R_total = (double)(R2 + R9 + R10 + R19 + R20) / 1000.0;
   double result = ((double)rawPower * Vref * Vref * R_total) / 
                   (4046.0 * (R29 * 1000.0 / Rt) * R30);
   
@@ -194,8 +196,9 @@ bool BL0940::getActiveEnergy(float *activeEnergy)
   int32_t rawCF = (int32_t)(data << 8) >> 8;
   if (rawCF < 0) rawCF = -rawCF;
   
-  *activeEnergy = (float)rawCF * 1638.4 * 256.0 * Vref * Vref * 
-                  (R2 + R9 + R10 + R19 + R20) / 
+  // R_total em ohms (convertido de kΩ), então dividimos por 1000
+  double R_total = (double)(R2 + R9 + R10 + R19 + R20) / 1000.0;
+  *activeEnergy = (float)rawCF * 1638.4 * 256.0 * Vref * Vref * R_total / 
                   (3600000.0 * 4046.0 * (R29 * 1000.0 / Rt) * R30);
   
   return true;

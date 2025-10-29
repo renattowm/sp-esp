@@ -39,24 +39,24 @@ public:
   void setPowerCalibration(float factor);
   
   // Hardware constants (modify for your circuit)
-  float Vref = 1.218;    // Internal voltage reference
-  float R2 = 5.0;        // Voltage divider resistors
-  float R9 = 5.0;
-  float R10 = 5.0;
-  float R19 = 100.0;
-  float R20 = 50.0;
-  float R30 = 24.0;
-  float R29 = 3.9;       // Current sense resistor divider
-  float Rt = 2000.0;     // Current sense total resistance
+  const float Vref = 1.218;    // [V] Internal voltage reference
+  const float R29 = 3.9;       // [Ohm] Current sense resistor divider (shunt side)
+  const float R30 = 24.0;      // [Ohm] Current sense resistor divider (ADC side)
+  const float Rt = 2000.0;     // Current sense total resistance (2000 for 100A/50mA range)
+  const float R2 = 33000.0;    // [Ohm] Voltage divider (converted from 33.0 kOhm)
+  const float R9 = 33000.0;    // [Ohm] Voltage divider (converted from 33.0 kOhm)
+  const float R10 = 33000.0;   // [Ohm] Voltage divider (converted from 33.0 kOhm)
+  const float R19 = 33000.0;   // [Ohm] Voltage divider (converted from 33.0 kOhm)
+  const float R20 = 33000.0;   // [Ohm] Voltage divider (converted from 33.0 kOhm)
   
   // Calibration factors (adjust to match real measurements)
   // For low loads: use higher factor (e.g. 1.05)
   // For high loads: use lower factor (e.g. 0.95)
-  float CURRENT_CAL = 1.00;  // Current calibration multiplier
-  float POWER_CAL = 1.00;    // Power calibration multiplier
+  float CURRENT_CAL = 1.00;    // Current calibration multiplier
+  float POWER_CAL = 1.00;      // Power calibration multiplier
   
-  float Hz = 50.0;           // AC frequency
-  uint32_t updateRate = 400; // RMS update rate (ms)
+  float Hz = 60.0;             // [Hz] AC line frequency (Brazil = 60Hz)
+  uint32_t updateRate = 400;    // [ms] RMS update rate
   
 private:
   int8_t _selPin;
