@@ -141,8 +141,10 @@ bool BL0940::getVoltage(float *voltage)
   }
   
   // R_total em ohms (convertido de kΩ), então dividimos por 1000
-  double R_total = (double)(R2 + R9 + R10 + R19 + R20) / 1000.0;
-  *voltage = (float)((double)data * Vref * R_total / (79931.0 * R30));
+  double R_total = (double)(_config.R2 + _config.R9 + _config.R10 + 
+                           _config.R19 + _config.R20) / 1000.0;
+  *voltage = (float)((double)data * _config.Vref * R_total / 
+                    (79931.0 * _config.R30));
   
   return true;
 }
@@ -156,7 +158,8 @@ bool BL0940::getCurrent(float *current)
     return false;
   }
   
-  double result = ((double)data * Vref * Rt) / (324004.0 * R29 * 1000.0);
+  double result = ((double)data * _config.Vref * _config.Rt) / 
+                  (324004.0 * _config.R29 * 1000.0);
   *current = (float)result * CURRENT_CAL;
   
   return true;
@@ -175,9 +178,10 @@ bool BL0940::getActivePower(float *activePower)
   if (rawPower < 0) rawPower = -rawPower;
   
   // R_total em ohms (convertido de kΩ), então dividimos por 1000
-  double R_total = (double)(R2 + R9 + R10 + R19 + R20) / 1000.0;
-  double result = ((double)rawPower * Vref * Vref * R_total) / 
-                  (4046.0 * (R29 * 1000.0 / Rt) * R30);
+  double R_total = (double)(_config.R2 + _config.R9 + _config.R10 + 
+                           _config.R19 + _config.R20) / 1000.0;
+  double result = ((double)rawPower * _config.Vref * _config.Vref * R_total) / 
+                  (4046.0 * (_config.R29 * 1000.0 / _config.Rt) * _config.R30);
   
   *activePower = (float)result * POWER_CAL;
   
@@ -197,9 +201,10 @@ bool BL0940::getActiveEnergy(float *activeEnergy)
   if (rawCF < 0) rawCF = -rawCF;
   
   // R_total em ohms (convertido de kΩ), então dividimos por 1000
-  double R_total = (double)(R2 + R9 + R10 + R19 + R20) / 1000.0;
-  *activeEnergy = (float)rawCF * 1638.4 * 256.0 * Vref * Vref * R_total / 
-                  (3600000.0 * 4046.0 * (R29 * 1000.0 / Rt) * R30);
+  double R_total = (double)(_config.R2 + _config.R9 + _config.R10 + 
+                           _config.R19 + _config.R20) / 1000.0;
+  *activeEnergy = (float)rawCF * 1638.4 * 256.0 * _config.Vref * _config.Vref * R_total / 
+                  (3600000.0 * 4046.0 * (_config.R29 * 1000.0 / _config.Rt) * _config.R30);
   
   return true;
 }

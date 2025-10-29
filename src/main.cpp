@@ -9,6 +9,9 @@
 
 #include "MCM_BL0940.h"
 
+// Declarar referência à configuração externa
+extern BL0940Config myConfig;
+
 // Pinos SPI
 #define SEL_PIN   5
 #define SCK_PIN   18
@@ -65,6 +68,19 @@ void setup()
 {
   Serial.begin(115200);
   Serial.println("\n=== BL0940 Example ===\n");
+  
+  // Aplicar configuração de hardware
+  meter.setConfig(myConfig);
+  
+  // Verificar se config foi aplicada
+  const BL0940Config& cfg = meter.getConfig();
+  Serial.println("Configuração do Hardware:");
+  Serial.printf("→ Vref: %.3f V\n", cfg.Vref);
+  Serial.printf("→ R29:  %.1f Ohm (shunt)\n", cfg.R29);
+  Serial.printf("→ R30:  %.1f Ohm\n", cfg.R30);
+  Serial.printf("→ Rt:   %.1f (range)\n", cfg.Rt);
+  Serial.printf("→ R2-R20: %.0f Ohm (divisor tensão)\n", cfg.R2);
+  Serial.println();
   
   if (!meter.begin()) {
     Serial.println("Falha ao inicializar BL0940!");
